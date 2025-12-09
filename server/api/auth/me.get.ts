@@ -16,7 +16,12 @@ export default defineEventHandler(async (event) => {
             id: true,
             email: true,
             name: true,
+            isSuperAdmin: true,
+            tenantId: true,
             createdAt: true,
+            tenant: {
+                select: { id: true, name: true, slug: true },
+            },
         },
     })
 

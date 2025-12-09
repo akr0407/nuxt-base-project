@@ -1,5 +1,5 @@
 // Prisma Schema for Nuxt Base Project
-// RBAC: User, Role, Permission, RolePermission, UserRole
+// Multi-Tenant RBAC: Tenant, User, Role, Permission, RolePermission, UserRole
 
 generator client {
   provider = "prisma-client-js"
@@ -10,29 +10,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Tenant {
+  id             String          @id @default(uuid())
+  name           String          @unique
+  slug           String          @unique
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  users          User[]
+  roles          Role[]
+  settings       Settings[]
+  themeTemplates ThemeTemplate[]
+
+  @@map("tenants")
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
   password      String
   name          String?
   isActive      Boolean        @default(true)
+  isSuperAdmin  Boolean        @default(false)
+  tenantId      String?
+  tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   userRoles     UserRole[]
   refreshTokens RefreshToken[]
 
+  @@index([tenantId])
   @@map("users")
 }
 
 model Role {
   id              String           @id @default(uuid())
-  name            String           @unique
+  name            String
   description     String?
+  isGlobal        Boolean          @default(false)
+  tenantId        String?
+  tenant          Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   rolePermissions RolePermission[]
   userRoles       UserRole[]
 
+  @@unique([name, tenantId])
+  @@index([tenantId])
   @@map("roles")
 }
 
@@ -83,22 +107,32 @@ model RefreshToken {
 }
 
 model Settings {
-  id        String   @id @default("app_settings")
-  key       String   @unique
+  id        String   @id @default(uuid())
+  key       String
   value     Json
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 
+  @@unique([tenantId, key])
+  @@index([tenantId])
   @@map("settings")
 }
 
 model ThemeTemplate {
   id        String   @id @default(uuid())
-  name      String   @unique
+  name      String
   settings  Json
   isDefault Boolean  @default(false)
+  isGlobal  Boolean  @default(false)
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([name, tenantId])
+  @@index([tenantId])
   @@map("theme_templates")
 }
+

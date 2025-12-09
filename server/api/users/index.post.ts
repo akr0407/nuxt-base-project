@@ -2,12 +2,28 @@ import prisma from '../../utils/prisma'
 import { requireAuth, requirePermission, validateBody } from '../../utils/auth'
 import { createUserSchema } from '../../utils/schemas'
 import { hashPassword } from '../../utils/password'
+import { getTenantId, isSuperAdmin, requireTenantId } from '../../utils/tenant'
 
 export default defineEventHandler(async (event) => {
     await requireAuth(event)
     await requirePermission(event, 'users:create')
 
     const body = await validateBody(event, createUserSchema)
+    const userIsSuperAdmin = isSuperAdmin(event)
+
+    // Determine tenant for new user
+    // SuperAdmins can create users in any tenant via X-Tenant-Id header
+    // Regular users can only create users in their own tenant
+    let targetTenantId: string | null = null
+
+    if (userIsSuperAdmin) {
+        // SuperAdmin can create:
+        // - SuperAdmin users (no tenant)
+        // - Tenant users (with X-Tenant-Id header)
+        targetTenantId = getTenantId(event)
+    } else {
+        targetTenantId = requireTenantId(event)
+    }
 
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
@@ -31,6 +47,8 @@ export default defineEventHandler(async (event) => {
             email: body.email,
             password: hashedPassword,
             name: body.name,
+            tenantId: targetTenantId,
+            isSuperAdmin: false, // Only seed/manual can create SuperAdmins
             userRoles: body.roleIds?.length
                 ? {
                     create: body.roleIds.map((roleId) => ({ roleId })),
@@ -42,11 +60,16 @@ export default defineEventHandler(async (event) => {
             email: true,
             name: true,
             isActive: true,
+            isSuperAdmin: true,
+            tenantId: true,
             createdAt: true,
+            tenant: {
+                select: { id: true, name: true, slug: true },
+            },
             userRoles: {
                 include: {
                     role: {
-                        select: { id: true, name: true },
+                        select: { id: true, name: true, isGlobal: true },
                     },
                 },
             },

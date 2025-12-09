@@ -8,6 +8,8 @@ export interface AuthUser {
     id: string
     email: string
     name: string | null
+    tenantId: string | null
+    isSuperAdmin: boolean
 }
 
 declare module 'h3' {
@@ -43,7 +45,14 @@ export async function requireAuth(event: H3Event): Promise<AuthUser> {
 
     const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
-        select: { id: true, email: true, name: true, isActive: true },
+        select: {
+            id: true,
+            email: true,
+            name: true,
+            isActive: true,
+            tenantId: true,
+            isSuperAdmin: true,
+        },
     })
 
     if (!user || !user.isActive) {
@@ -58,6 +67,8 @@ export async function requireAuth(event: H3Event): Promise<AuthUser> {
         id: user.id,
         email: user.email,
         name: user.name,
+        tenantId: user.tenantId,
+        isSuperAdmin: user.isSuperAdmin,
     }
 
     return event.context.user

@@ -1,9 +1,18 @@
 import { defineStore } from 'pinia'
 
+export interface Tenant {
+    id: string
+    name: string
+    slug: string
+}
+
 export interface User {
     id: string
     email: string
     name: string | null
+    isSuperAdmin: boolean
+    tenantId: string | null
+    tenant: Tenant | null
 }
 
 export interface AuthState {
@@ -27,13 +36,17 @@ export const useAuthStore = defineStore('auth', {
 
     getters: {
         isAuthenticated: (state) => !!state.accessToken && !!state.user,
-        hasPermission: (state) => (permission: string) => state.permissions.includes(permission),
+        isSuperAdmin: (state) => state.user?.isSuperAdmin === true,
+        currentTenant: (state) => state.user?.tenant || null,
+        currentTenantId: (state) => state.user?.tenantId || null,
+        hasPermission: (state) => (permission: string) =>
+            state.user?.isSuperAdmin || state.permissions.includes(permission),
         hasAnyPermission: (state) => (permissions: string[]) =>
-            permissions.some((p) => state.permissions.includes(p)),
+            state.user?.isSuperAdmin || permissions.some((p) => state.permissions.includes(p)),
         hasAllPermissions: (state) => (permissions: string[]) =>
-            permissions.every((p) => state.permissions.includes(p)),
+            state.user?.isSuperAdmin || permissions.every((p) => state.permissions.includes(p)),
         hasRole: (state) => (role: string) => state.roles.includes(role),
-        isAdmin: (state) => state.roles.includes('admin'),
+        isAdmin: (state) => state.user?.isSuperAdmin || state.roles.includes('tenant_admin'),
     },
 
     actions: {

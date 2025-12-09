@@ -13,7 +13,7 @@ import {
 export default defineEventHandler(async (event) => {
     const body = await validateBody(event, loginSchema)
 
-    // Find user by email
+    // Find user by email with tenant info
     const user = await prisma.user.findUnique({
         where: { email: body.email },
         select: {
@@ -22,6 +22,11 @@ export default defineEventHandler(async (event) => {
             name: true,
             password: true,
             isActive: true,
+            isSuperAdmin: true,
+            tenantId: true,
+            tenant: {
+                select: { id: true, name: true, slug: true, isActive: true },
+            },
         },
     })
 
@@ -38,6 +43,15 @@ export default defineEventHandler(async (event) => {
             statusCode: 401,
             statusMessage: 'Unauthorized',
             message: 'Account is deactivated',
+        })
+    }
+
+    // Check if tenant is active (for non-SuperAdmins)
+    if (!user.isSuperAdmin && user.tenant && !user.tenant.isActive) {
+        throw createError({
+            statusCode: 401,
+            statusMessage: 'Unauthorized',
+            message: 'Organization is deactivated',
         })
     }
 
@@ -77,6 +91,13 @@ export default defineEventHandler(async (event) => {
             id: user.id,
             email: user.email,
             name: user.name,
+            isSuperAdmin: user.isSuperAdmin,
+            tenantId: user.tenantId,
+            tenant: user.tenant ? {
+                id: user.tenant.id,
+                name: user.tenant.name,
+                slug: user.tenant.slug,
+            } : null,
         },
     }
 })

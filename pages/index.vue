@@ -1,8 +1,8 @@
 <template>
-  <div class="bg-gradient-to-br from-primary-50 to-white">
+  <div class="">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div class="text-center">
-        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+        <h1 class="text-4xl sm:text-5xl font-bold mb-6">
           Nuxt 3 Base Project
         </h1>
         <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
