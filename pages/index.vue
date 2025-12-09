@@ -79,6 +79,7 @@ import { useAuthStore } from '~/stores/auth'
 
 definePageMeta({
   middleware: ['auth'],
+  layout: 'default',
 })
 
 const icons = { UserPlus, BookOpen, Users }

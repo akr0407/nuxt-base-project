@@ -103,10 +103,12 @@ import {
   type FormRules,
 } from 'naive-ui'
 import { UserPlus, Search, Pencil, Trash2 } from 'lucide-vue-next'
+import type { VNode } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useDebounceFn } from '@vueuse/core'
 
 definePageMeta({
+  layout: 'default',
   middleware: ['auth'],
 })
 
@@ -218,7 +220,7 @@ const columns = computed<DataTableColumns<User>>(() => [
     key: 'actions',
     width: 120,
     render: (row) => {
-      const buttons = []
+      const buttons: VNode[] = []
       if (authStore.hasPermission('users:update')) {
         buttons.push(
           h(

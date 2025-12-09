@@ -19,3 +19,19 @@ declare module 'swagger-ui-dist/swagger-ui-bundle' {
     const SwaggerUIBundle: SwaggerUIBundle
     export default SwaggerUIBundle
 }
+
+declare module '@scalar/api-reference' {
+    export function createScalarApiReference(
+        element: HTMLElement,
+        config: {
+            spec?: { url?: string; content?: string }
+            theme?: string
+            darkMode?: boolean
+            [key: string]: any
+        }
+    ): void
+}
+
+declare module '@stoplight/elements' {
+    export const API: any
+}

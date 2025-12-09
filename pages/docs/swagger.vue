@@ -1,18 +1,27 @@
 <template>
-  <div class="min-h-screen bg-white">
-    <div id="swagger-ui"></div>
+  <div class="docs-page">
+    <n-card class="docs-card">
+      <ClientOnly>
+        <div id="swagger-ui"></div>
+        <template #fallback>
+          <div class="flex items-center justify-center h-96">
+            <div class="animate-pulse text-gray-400">Loading Swagger UI...</div>
+          </div>
+        </template>
+      </ClientOnly>
+    </n-card>
   </div>
 </template>
 
 <script setup lang="ts">
+import { NCard } from 'naive-ui'
 import 'swagger-ui-dist/swagger-ui.css'
 
 definePageMeta({
-  middleware: ['auth'],
+  layout: 'default',
 })
 
 onMounted(async () => {
-  // Dynamically import SwaggerUI to avoid SSR issues
   const SwaggerUI = (await import('swagger-ui-dist/swagger-ui-bundle')).default
   
   SwaggerUI({
@@ -28,8 +37,18 @@ onMounted(async () => {
 })
 </script>
 
+<style scoped>
+.docs-page {
+  padding: 24px;
+}
+
+.docs-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+</style>
+
 <style>
-/* Customize Swagger UI appearance */
 .swagger-ui .topbar {
   display: none;
 }

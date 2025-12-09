@@ -12,6 +12,7 @@ const DEFAULT_PERMISSIONS = [
     { name: 'roles:create', description: 'Create roles' },
     { name: 'roles:update', description: 'Update roles' },
     { name: 'permissions:read', description: 'View permissions' },
+    { name: 'settings:update', description: 'Update application settings' },
 ]
 
 async function main() {

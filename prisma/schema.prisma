@@ -81,3 +81,24 @@ model RefreshToken {
   @@index([token])
   @@map("refresh_tokens")
 }
+
+model Settings {
+  id        String   @id @default("app_settings")
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@map("settings")
+}
+
+model ThemeTemplate {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  settings  Json
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("theme_templates")
+}
