@@ -1,88 +1,153 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 max-w-5xl">
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-2xl font-bold">Roles</h1>
-        <p class="opacity-70">Manage roles and their permissions</p>
+        <p class="text-muted-foreground">Manage roles and their permissions</p>
       </div>
-      <n-button
-        v-if="authStore.hasPermission('roles:create')"
-        type="primary"
-        @click="openCreateModal"
-      >
-        <template #icon>
-          <Plus class="w-5 h-5" />
-        </template>
+      <Button v-if="authStore.hasPermission('roles:create')" @click="openCreateModal">
+        <Plus class="w-5 h-5 mr-2" />
         Add Role
-      </n-button>
+      </Button>
     </div>
 
     <!-- Roles Table -->
-    <n-card>
-      <n-data-table
-        :columns="columns"
-        :data="roles"
-        :loading="loading"
-        :row-key="(row) => row.id"
-      />
-    </n-card>
+    <Card>
+      <CardContent class="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead class="w-[150px]">Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Permissions</TableHead>
+              <TableHead class="w-[80px]">Users</TableHead>
+              <TableHead class="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-if="loading">
+              <TableCell :colspan="5" class="text-center py-8 text-muted-foreground">
+                Loading...
+              </TableCell>
+            </TableRow>
+            <TableRow v-else-if="roles.length === 0">
+              <TableCell :colspan="5" class="text-center py-8 text-muted-foreground">
+                No roles found
+              </TableCell>
+            </TableRow>
+            <TableRow v-for="role in roles" :key="role.id">
+              <TableCell class="font-medium">{{ role.name }}</TableCell>
+              <TableCell>{{ role.description || '—' }}</TableCell>
+              <TableCell>
+                <div v-if="role.permissions?.length" class="flex flex-wrap gap-1">
+                  <Badge
+                    v-for="p in role.permissions"
+                    :key="p.id"
+                    variant="outline"
+                    class="text-xs"
+                  >
+                    {{ p.name }}
+                  </Badge>
+                </div>
+                <span v-else class="text-muted-foreground">—</span>
+              </TableCell>
+              <TableCell>{{ role.userCount }}</TableCell>
+              <TableCell>
+                <div class="flex gap-1">
+                  <Button
+                    v-if="authStore.hasPermission('roles:update')"
+                    variant="ghost"
+                    size="icon"
+                    @click="openEditModal(role)"
+                  >
+                    <Pencil class="w-4 h-4" />
+                  </Button>
+                  <Button
+                    v-if="authStore.hasPermission('roles:update') && role.name !== 'admin'"
+                    variant="ghost"
+                    size="icon"
+                    class="text-destructive"
+                    @click="confirmDelete(role)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
 
     <!-- Create/Edit Modal -->
-    <n-modal v-model:show="showModal" preset="card" :title="editingRole ? 'Edit Role' : 'Create Role'" style="width: 600px;">
-      <n-form ref="formRef" :model="form" :rules="rules">
-        <n-form-item label="Name" path="name">
-          <n-input v-model:value="form.name" placeholder="Role name" />
-        </n-form-item>
-        <n-form-item label="Description" path="description">
-          <n-input v-model:value="form.description" type="textarea" placeholder="Description" />
-        </n-form-item>
-        <n-form-item label="Permissions" path="permissionIds">
-          <div class="permissions-grid">
-            <n-checkbox
-              v-for="permission in permissions"
-              :key="permission.id"
-              :checked="form.permissionIds.includes(permission.id)"
-              @update:checked="togglePermission(permission.id, $event)"
-            >
-              <div class="permission-item">
-                <span class="font-medium">{{ formatPermissionName(permission.name) }}</span>
-                <span class="text-xs opacity-50">{{ permission.description }}</span>
-              </div>
-            </n-checkbox>
+    <Dialog v-model:open="showModal">
+      <DialogContent class="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>{{ editingRole ? 'Edit Role' : 'Create Role' }}</DialogTitle>
+        </DialogHeader>
+        <form class="space-y-4" @submit.prevent="handleSubmit">
+          <div class="space-y-2">
+            <Label for="name">Name</Label>
+            <Input id="name" v-model="form.name" placeholder="Role name" required />
           </div>
-        </n-form-item>
-      </n-form>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <n-button @click="showModal = false">Cancel</n-button>
-          <n-button type="primary" :loading="saving" @click="handleSubmit">
+          <div class="space-y-2">
+            <Label for="description">Description</Label>
+            <Input id="description" v-model="form.description" placeholder="Description" />
+          </div>
+          <div class="space-y-2">
+            <Label>Permissions</Label>
+            <div class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto p-2 border rounded-md">
+              <div
+                v-for="permission in permissions"
+                :key="permission.id"
+                class="flex items-start space-x-2"
+              >
+                <Checkbox
+                  :id="`perm-${permission.id}`"
+                  :checked="form.permissionIds.includes(permission.id)"
+                  @update:checked="togglePermission(permission.id, $event)"
+                />
+                <div class="grid gap-1.5 leading-none">
+                  <Label :for="`perm-${permission.id}`" class="text-sm font-medium">
+                    {{ formatPermissionName(permission.name) }}
+                  </Label>
+                  <p v-if="permission.description" class="text-xs text-muted-foreground">
+                    {{ permission.description }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+        <DialogFooter>
+          <Button variant="outline" @click="showModal = false">Cancel</Button>
+          <Button :disabled="saving" @click="handleSubmit">
+            <span v-if="saving" class="mr-2 animate-spin">⏳</span>
             {{ editingRole ? 'Update' : 'Create' }}
-          </n-button>
-        </div>
-      </template>
-    </n-modal>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete Role</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{{ roleToDelete?.name }}"?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
+          <Button variant="destructive" @click="deleteRole">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  NButton,
-  NCard,
-  NDataTable,
-  NModal,
-  NForm,
-  NFormItem,
-  NInput,
-  NCheckbox,
-  NTag,
-  NSpace,
-  useMessage,
-  useDialog,
-  type DataTableColumns,
-  type FormInst,
-  type FormRules,
-} from 'naive-ui'
-import type { VNode } from 'vue'
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next'
 import { useAuthStore } from '~/stores/auth'
 
@@ -106,15 +171,14 @@ interface Permission {
 }
 
 const authStore = useAuthStore()
-const message = useMessage()
-const dialog = useDialog()
 const { $api } = useNuxtApp()
 
 const roles = ref<Role[]>([])
 const permissions = ref<Permission[]>([])
 const loading = ref(false)
 const showModal = ref(false)
-const formRef = ref<FormInst | null>(null)
+const showDeleteDialog = ref(false)
+const roleToDelete = ref<Role | null>(null)
 const saving = ref(false)
 const editingRole = ref<Role | null>(null)
 
@@ -124,10 +188,6 @@ const form = reactive({
   permissionIds: [] as string[],
 })
 
-const rules: FormRules = {
-  name: [{ required: true, message: 'Name is required', trigger: 'blur' }],
-}
-
 function formatPermissionName(name: string): string {
   const [resource, action] = name.split(':')
   return `${resource.charAt(0).toUpperCase() + resource.slice(1)} - ${action.charAt(0).toUpperCase() + action.slice(1)}`
@@ -135,56 +195,11 @@ function formatPermissionName(name: string): string {
 
 function togglePermission(id: string, checked: boolean) {
   if (checked) {
-    if (!form.permissionIds.includes(id)) {
-      form.permissionIds.push(id)
-    }
+    if (!form.permissionIds.includes(id)) form.permissionIds.push(id)
   } else {
     form.permissionIds = form.permissionIds.filter((p) => p !== id)
   }
 }
-
-const columns = computed<DataTableColumns<Role>>(() => [
-  { title: 'Name', key: 'name', width: 150 },
-  { title: 'Description', key: 'description', render: (row) => row.description || '—' },
-  {
-    title: 'Permissions',
-    key: 'permissions',
-    render: (row) => {
-      if (!row.permissions?.length) return '—'
-      return h(NSpace, { size: 'small', wrap: true }, () =>
-        row.permissions.map((p) => h(NTag, { size: 'small', type: 'info' }, () => p.name))
-      )
-    },
-  },
-  { title: 'Users', key: 'userCount', width: 80 },
-  {
-    title: 'Actions',
-    key: 'actions',
-    width: 120,
-    render: (row) => {
-      const buttons: VNode[] = []
-      if (authStore.hasPermission('roles:update')) {
-        buttons.push(
-          h(
-            NButton,
-            { size: 'small', quaternary: true, onClick: () => openEditModal(row) },
-            { icon: () => h(Pencil, { size: 16 }) }
-          )
-        )
-      }
-      if (authStore.hasPermission('roles:update') && row.name !== 'admin') {
-        buttons.push(
-          h(
-            NButton,
-            { size: 'small', quaternary: true, type: 'error', onClick: () => confirmDelete(row) },
-            { icon: () => h(Trash2, { size: 16 }) }
-          )
-        )
-      }
-      return h(NSpace, { size: 'small' }, () => buttons)
-    },
-  },
-])
 
 function openCreateModal() {
   editingRole.value = null
@@ -203,13 +218,8 @@ function openEditModal(role: Role) {
 }
 
 function confirmDelete(role: Role) {
-  dialog.warning({
-    title: 'Delete Role',
-    content: `Are you sure you want to delete "${role.name}"?`,
-    positiveText: 'Delete',
-    negativeText: 'Cancel',
-    onPositiveClick: () => deleteRole(role.id),
-  })
+  roleToDelete.value = role
+  showDeleteDialog.value = true
 }
 
 async function fetchRoles() {
@@ -217,8 +227,8 @@ async function fetchRoles() {
   try {
     const response = await $api<{ data: Role[] }>('/api/roles', { query: { limit: 100 } })
     roles.value = response.data
-  } catch (error: any) {
-    message.error(error.data?.message || 'Failed to fetch roles')
+  } catch {
+    // Handle error
   } finally {
     loading.value = false
   }
@@ -234,12 +244,6 @@ async function fetchPermissions() {
 }
 
 async function handleSubmit() {
-  try {
-    await formRef.value?.validate()
-  } catch {
-    return
-  }
-
   saving.value = true
   try {
     if (editingRole.value) {
@@ -247,30 +251,30 @@ async function handleSubmit() {
         method: 'PUT',
         body: form,
       })
-      message.success('Role updated successfully')
     } else {
       await $api('/api/roles', {
         method: 'POST',
         body: form,
       })
-      message.success('Role created successfully')
     }
     showModal.value = false
     fetchRoles()
-  } catch (error: any) {
-    message.error(error.data?.message || 'Failed to save role')
+  } catch {
+    // Handle error
   } finally {
     saving.value = false
   }
 }
 
-async function deleteRole(id: string) {
+async function deleteRole() {
+  if (!roleToDelete.value) return
   try {
-    await $api(`/api/roles/${id}`, { method: 'DELETE' })
-    message.success('Role deleted successfully')
+    await $api(`/api/roles/${roleToDelete.value.id}`, { method: 'DELETE' })
+    showDeleteDialog.value = false
+    roleToDelete.value = null
     fetchRoles()
-  } catch (error: any) {
-    message.error(error.data?.message || 'Failed to delete role')
+  } catch {
+    // Handle error
   }
 }
 
@@ -279,17 +283,3 @@ onMounted(() => {
   fetchPermissions()
 })
 </script>
-
-<style scoped>
-.permissions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-}
-
-.permission-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-</style>

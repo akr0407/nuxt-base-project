@@ -1,31 +1,45 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 max-w-4xl">
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">Permissions</h1>
-      <p class="text-gray-600">View available system permissions</p>
+      <h1 class="text-2xl font-bold">Permissions</h1>
+      <p class="text-muted-foreground">View available system permissions</p>
     </div>
 
     <!-- Permissions Table -->
-    <n-card>
-      <n-data-table
-        :columns="columns"
-        :data="permissions"
-        :loading="loading"
-        :row-key="(row) => row.id"
-      />
-    </n-card>
+    <Card>
+      <CardContent class="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-if="loading">
+              <TableCell :colspan="2" class="text-center py-8 text-muted-foreground">
+                Loading...
+              </TableCell>
+            </TableRow>
+            <TableRow v-else-if="permissions.length === 0">
+              <TableCell :colspan="2" class="text-center py-8 text-muted-foreground">
+                No permissions found
+              </TableCell>
+            </TableRow>
+            <TableRow v-for="permission in permissions" :key="permission.id">
+              <TableCell>
+                <Badge variant="secondary">{{ permission.name }}</Badge>
+              </TableCell>
+              <TableCell>{{ permission.description || '—' }}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  NCard,
-  NDataTable,
-  NTag,
-  useMessage,
-  type DataTableColumns,
-} from 'naive-ui'
-
 definePageMeta({
   layout: 'default',
   middleware: ['auth'],
@@ -38,24 +52,18 @@ interface Permission {
   createdAt: string
 }
 
-const message = useMessage()
 const { $api } = useNuxtApp()
 
 const permissions = ref<Permission[]>([])
 const loading = ref(false)
-
-const columns = computed<DataTableColumns<Permission>>(() => [
-  { title: 'Name', key: 'name', render: (row) => h(NTag, { type: 'info' }, () => row.name) },
-  { title: 'Description', key: 'description', render: (row) => row.description || '—' },
-])
 
 async function fetchPermissions() {
   loading.value = true
   try {
     const response = await $api<{ data: Permission[] }>('/api/permissions')
     permissions.value = response.data
-  } catch (error: any) {
-    message.error(error.data?.message || 'Failed to fetch permissions')
+  } catch {
+    // Handle error
   } finally {
     loading.value = false
   }

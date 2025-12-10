@@ -1,71 +1,63 @@
 <template>
-  <div class="">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-      <div class="text-center">
-        <h1 class="text-4xl sm:text-5xl font-bold mb-6">
-          Nuxt 3 Base Project
-        </h1>
-        <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          A production-ready starter template with authentication, RBAC, Prisma ORM,
-          API documentation, and Naive UI components.
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <template v-if="!authStore.isAuthenticated">
-            <NuxtLink to="/register">
-              <n-button type="primary" size="large">
-                <template #icon>
-                  <component :is="icons.UserPlus" class="w-5 h-5" />
-                </template>
-                Get Started
-              </n-button>
-            </NuxtLink>
-            <NuxtLink to="/docs">
-              <n-button size="large">
-                <template #icon>
-                  <component :is="icons.BookOpen" class="w-5 h-5" />
-                </template>
-                API Documentation
-              </n-button>
-            </NuxtLink>
-          </template>
-          <template v-else>
-            <NuxtLink v-if="authStore.hasPermission('users:read')" to="/admin/users">
-              <n-button type="primary" size="large">
-                <template #icon>
-                  <component :is="icons.Users" class="w-5 h-5" />
-                </template>
-                Manage Users
-              </n-button>
-            </NuxtLink>
-            <NuxtLink to="/docs">
-              <n-button size="large">
-                <template #icon>
-                  <component :is="icons.BookOpen" class="w-5 h-5" />
-                </template>
-                API Documentation
-              </n-button>
-            </NuxtLink>
-          </template>
-        </div>
+  <div class="min-h-[calc(100vh-128px)]">
+    <!-- Hero Section -->
+    <div class="text-center py-12 px-4">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">Nuxt 3 Base Project</h1>
+      <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
+        A production-ready starter template with authentication, RBAC, and modern UI components.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <template v-if="!authStore.isAuthenticated">
+          <NuxtLink to="/register">
+            <Button size="lg">
+              <UserPlus class="w-5 h-5 mr-2" />
+              Get Started
+            </Button>
+          </NuxtLink>
+          <NuxtLink to="/docs">
+            <Button variant="outline" size="lg">
+              <BookOpen class="w-5 h-5 mr-2" />
+              View Documentation
+            </Button>
+          </NuxtLink>
+        </template>
+        <template v-else>
+          <NuxtLink to="/admin/users">
+            <Button size="lg">
+              <Users class="w-5 h-5 mr-2" />
+              Manage Users
+            </Button>
+          </NuxtLink>
+          <NuxtLink to="/docs">
+            <Button variant="outline" size="lg">
+              <BookOpen class="w-5 h-5 mr-2" />
+              API Documentation
+            </Button>
+          </NuxtLink>
+        </template>
       </div>
     </div>
 
-    <!-- Features -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-      <div class="grid md:grid-cols-3 gap-8">
-        <div
-          v-for="feature in features"
-          :key="feature.title"
-          class="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
-        >
-          <div
-            class="w-12 h-12 rounded-lg flex items-center justify-center mb-4"
-            :class="feature.iconBg"
-          >
-            <component :is="feature.icon" class="w-6 h-6" :class="feature.iconColor" />
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ feature.title }}</h3>
-          <p class="text-gray-600">{{ feature.description }}</p>
+    <!-- Features Section -->
+    <div class="py-12 px-4">
+      <div class="max-w-6xl mx-auto">
+        <h2 class="text-2xl font-bold text-center text-gray-900 dark:text-white mb-8">
+          Built with Modern Technologies
+        </h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card v-for="feature in features" :key="feature.title">
+            <CardHeader>
+              <div class="flex items-center gap-3">
+                <div class="p-2 rounded-lg" :class="feature.iconBg">
+                  <component :is="feature.icon" class="w-5 h-5" :class="feature.iconColor" />
+                </div>
+                <CardTitle class="text-lg">{{ feature.title }}</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p class="text-gray-600 dark:text-gray-400 text-sm">{{ feature.description }}</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
@@ -73,16 +65,13 @@
 </template>
 
 <script setup lang="ts">
-import { NButton } from 'naive-ui'
-import { UserPlus, BookOpen, Users, Shield, Database, FileCode } from 'lucide-vue-next'
+import { UserPlus, BookOpen, Users, Shield, Database, FileCode, Palette } from 'lucide-vue-next'
 import { useAuthStore } from '~/stores/auth'
 
 definePageMeta({
   middleware: ['auth'],
   layout: 'default',
 })
-
-const icons = { UserPlus, BookOpen, Users }
 
 const authStore = useAuthStore()
 
@@ -96,7 +85,7 @@ const features = [
   },
   {
     title: 'RBAC',
-    description: 'Role-based access control with Users, Roles, and Permissions management.',
+    description: 'Role-based access control with users, roles, and granular permissions.',
     icon: Users,
     iconBg: 'bg-blue-100',
     iconColor: 'text-blue-600',
@@ -116,28 +105,18 @@ const features = [
     iconColor: 'text-orange-600',
   },
   {
-    title: 'Naive UI',
-    description: 'Beautiful Vue 3 component library with TypeScript support.',
-    icon: markRaw(defineComponent({
-      render: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, [
-        h('rect', { x: 3, y: 3, width: 18, height: 18, rx: 2, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }),
-        h('path', { d: 'M3 9h18M9 21V9', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }),
-      ]),
-    })),
-    iconBg: 'bg-teal-100',
-    iconColor: 'text-teal-600',
-  },
-  {
-    title: 'Testing Ready',
-    description: 'Vitest for unit tests and Playwright for E2E testing, with CI setup.',
-    icon: markRaw(defineComponent({
-      render: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
-        h('path', { d: 'M9 12l2 2 4-4' }),
-        h('circle', { cx: 12, cy: 12, r: 10 }),
-      ]),
-    })),
+    title: 'shadcn-vue',
+    description: 'Beautiful, accessible components built with Radix Vue and Tailwind CSS.',
+    icon: Palette,
     iconBg: 'bg-pink-100',
     iconColor: 'text-pink-600',
+  },
+  {
+    title: 'TypeScript',
+    description: 'Full type safety throughout the entire stack, from frontend to backend.',
+    icon: FileCode,
+    iconBg: 'bg-cyan-100',
+    iconColor: 'text-cyan-600',
   },
 ]
 </script>

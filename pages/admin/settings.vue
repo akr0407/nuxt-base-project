@@ -1,48 +1,49 @@
 <template>
-  <div class="settings-page">
+  <div class="settings-page max-w-5xl">
     <div class="mb-6">
       <h1 class="text-2xl font-bold">Settings</h1>
-      <p class="text-sm opacity-70">Customize application appearance and preferences</p>
+      <p class="text-sm text-muted-foreground">Customize application appearance and preferences</p>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-2">
       <!-- Appearance Settings -->
-      <n-card title="Appearance">
-        <div class="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-6">
           <!-- Dark Mode Toggle -->
           <div class="flex items-center justify-between">
             <div>
               <p class="font-medium">Dark Mode</p>
-              <p class="text-sm opacity-70">Switch between light and dark theme</p>
+              <p class="text-sm text-muted-foreground">Switch between light and dark theme</p>
             </div>
-            <n-switch 
-              :value="themeStore.settings.darkMode"
-              @update:value="handleDarkModeChange"
-            >
-              <template #checked>
-                <Moon class="w-3 h-3" />
-              </template>
-              <template #unchecked>
-                <Sun class="w-3 h-3" />
-              </template>
-            </n-switch>
+            <Switch
+              :checked="themeStore.settings.darkMode"
+              @update:checked="handleDarkModeChange"
+            />
           </div>
 
           <!-- Primary Color -->
           <div>
             <p class="font-medium mb-2">Primary Color</p>
-            <p class="text-sm opacity-70 mb-3">Main accent color for the application</p>
+            <p class="text-sm text-muted-foreground mb-3">Main accent color for the application</p>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="color in primaryColors"
                 :key="color.value"
                 class="color-swatch"
-                :class="{ 'color-swatch--active': themeStore.settings.primaryColor === color.value }"
+                :class="{
+                  'color-swatch--active': themeStore.settings.primaryColor === color.value,
+                }"
                 :style="{ backgroundColor: color.value }"
                 :title="color.name"
                 @click="themeStore.setPrimaryColor(color.value)"
               >
-                <Check v-if="themeStore.settings.primaryColor === color.value" class="w-4 h-4 text-white" />
+                <Check
+                  v-if="themeStore.settings.primaryColor === color.value"
+                  class="w-4 h-4 text-white"
+                />
               </button>
             </div>
           </div>
@@ -50,186 +51,192 @@
           <!-- Secondary Color -->
           <div>
             <p class="font-medium mb-2">Secondary Color</p>
-            <p class="text-sm opacity-70 mb-3">Accent color for gradients and highlights</p>
+            <p class="text-sm text-muted-foreground mb-3">
+              Accent color for gradients and highlights
+            </p>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="color in secondaryColors"
                 :key="color.value"
                 class="color-swatch"
-                :class="{ 'color-swatch--active': themeStore.settings.secondaryColor === color.value }"
+                :class="{
+                  'color-swatch--active': themeStore.settings.secondaryColor === color.value,
+                }"
                 :style="{ backgroundColor: color.value }"
                 :title="color.name"
                 @click="themeStore.setSecondaryColor(color.value)"
               >
-                <Check v-if="themeStore.settings.secondaryColor === color.value" class="w-4 h-4 text-white" />
+                <Check
+                  v-if="themeStore.settings.secondaryColor === color.value"
+                  class="w-4 h-4 text-white"
+                />
               </button>
             </div>
           </div>
-        </div>
-
-        <template #footer>
-          <div class="flex gap-2">
-            <n-button 
-              type="primary" 
-              :loading="saving" 
-              @click="saveSettings"
-              :disabled="!hasChanges"
-            >
-              Save Changes
-            </n-button>
-            <n-button @click="resetToDefaults">
-              Reset
-            </n-button>
-          </div>
-        </template>
-      </n-card>
+        </CardContent>
+        <CardFooter class="gap-2">
+          <Button :disabled="!hasChanges || saving" @click="saveSettings">
+            <span v-if="saving" class="mr-2 animate-spin">⏳</span>
+            Save Changes
+          </Button>
+          <Button variant="outline" @click="resetToDefaults"> Reset </Button>
+        </CardFooter>
+      </Card>
 
       <!-- Theme Preview -->
-      <n-card title="Theme Preview">
-        <div class="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Theme Preview</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
           <div class="preview-header" :style="{ background: previewGradient }">
             <div class="preview-logo">
               <Layers class="w-5 h-5 text-white" />
             </div>
             <span class="text-white font-semibold">Preview Header</span>
           </div>
-          
+
           <div class="flex gap-2 flex-wrap">
-            <n-button type="primary">Primary</n-button>
-            <n-button type="primary" ghost>Ghost</n-button>
-            <n-button type="info">Secondary</n-button>
-            <n-button>Default</n-button>
+            <Button>Primary</Button>
+            <Button variant="outline">Outline</Button>
+            <Button variant="secondary">Secondary</Button>
+            <Button variant="ghost">Ghost</Button>
           </div>
 
-          <n-progress type="line" :percentage="70" :indicator-placement="'inside'" />
+          <Progress :model-value="70" class="w-full" />
 
           <div class="flex gap-2">
-            <n-tag type="primary">Primary</n-tag>
-            <n-tag type="info">Secondary</n-tag>
-            <n-tag type="success">Success</n-tag>
+            <Badge>Primary</Badge>
+            <Badge variant="secondary">Secondary</Badge>
+            <Badge variant="outline">Outline</Badge>
           </div>
-        </div>
-      </n-card>
+        </CardContent>
+      </Card>
 
       <!-- Saved Themes -->
-      <n-card title="Saved Themes">
-        <template #header-extra>
-          <n-button type="primary" size="small" @click="showSaveModal = true">
-            <template #icon>
-              <Plus class="w-4 h-4" />
-            </template>
+      <Card>
+        <CardHeader class="flex flex-row items-center justify-between">
+          <CardTitle>Saved Themes</CardTitle>
+          <Button size="sm" @click="showSaveModal = true">
+            <Plus class="w-4 h-4 mr-2" />
             Save Current
-          </n-button>
-        </template>
-
-        <div v-if="themeStore.templates.length === 0" class="text-center py-8 opacity-50">
-          <Palette class="w-12 h-12 mx-auto mb-2" />
-          <p>No saved themes yet</p>
-          <p class="text-sm">Save your current theme to reuse it later</p>
-        </div>
-
-        <div v-else class="space-y-2">
+          </Button>
+        </CardHeader>
+        <CardContent>
           <div
-            v-for="template in themeStore.templates"
-            :key="template.id"
-            class="template-item"
+            v-if="themeStore.templates.length === 0"
+            class="text-center py-8 text-muted-foreground"
           >
-            <div class="flex items-center gap-3">
-              <div class="color-preview">
-                <div 
-                  class="color-dot" 
+            <Palette class="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <p>No saved themes yet</p>
+            <p class="text-sm">Save your current theme to reuse it later</p>
+          </div>
+
+          <div v-else class="space-y-2">
+            <div
+              v-for="template in themeStore.templates"
+              :key="template.id"
+              class="template-item p-3 rounded-lg border flex items-center gap-3"
+            >
+              <div class="color-preview flex gap-1">
+                <div
+                  class="w-5 h-5 rounded-full border-2 border-white shadow-sm"
                   :style="{ backgroundColor: template.settings.primaryColor }"
-                ></div>
-                <div 
-                  class="color-dot" 
+                />
+                <div
+                  class="w-5 h-5 rounded-full border-2 border-white shadow-sm"
                   :style="{ backgroundColor: template.settings.secondaryColor }"
-                ></div>
+                />
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-medium truncate">{{ template.name }}</p>
-                <p class="text-xs opacity-50">
+                <p class="text-xs text-muted-foreground">
                   {{ template.settings.darkMode ? 'Dark' : 'Light' }} mode
                 </p>
               </div>
-              <n-button-group size="small">
-                <n-button quaternary @click="applyTemplate(template)">
-                  Apply
-                </n-button>
-                <n-button quaternary type="error" @click="confirmDeleteTemplate(template)">
-                  <template #icon>
-                    <Trash2 class="w-4 h-4" />
-                  </template>
-                </n-button>
-              </n-button-group>
+              <div class="flex gap-1">
+                <Button variant="ghost" size="sm" @click="applyTemplate(template)"> Apply </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="text-destructive"
+                  @click="confirmDeleteTemplate(template)"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </n-card>
+        </CardContent>
+      </Card>
 
       <!-- Profile Settings -->
-      <n-card title="Profile">
-        <n-form :model="profile">
-          <n-form-item label="Name">
-            <n-input v-model:value="profile.name" placeholder="Your name" />
-          </n-form-item>
-          <n-form-item label="Email">
-            <n-input v-model:value="profile.email" disabled />
-          </n-form-item>
-        </n-form>
-
-        <template #footer>
-          <n-button type="primary" :loading="savingProfile" @click="updateProfile">
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="space-y-2">
+            <Label for="name">Name</Label>
+            <Input id="name" v-model="profile.name" placeholder="Your name" />
+          </div>
+          <div class="space-y-2">
+            <Label for="email">Email</Label>
+            <Input id="email" v-model="profile.email" disabled />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button :disabled="savingProfile" @click="updateProfile">
+            <span v-if="savingProfile" class="mr-2 animate-spin">⏳</span>
             Save Profile
-          </n-button>
-        </template>
-      </n-card>
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
 
-    <!-- Save Template Modal -->
-    <n-modal v-model:show="showSaveModal">
-      <n-card title="Save Theme" style="width: 400px;">
-        <n-form>
-          <n-form-item label="Theme Name">
-            <n-input 
-              v-model:value="newTemplateName" 
-              placeholder="My Custom Theme"
-            />
-          </n-form-item>
-        </n-form>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <n-button @click="showSaveModal = false">Cancel</n-button>
-            <n-button 
-              type="primary" 
-              :loading="savingTemplate"
-              :disabled="!newTemplateName.trim()"
-              @click="saveTemplate"
-            >
-              Save
-            </n-button>
+    <!-- Save Template Dialog -->
+    <Dialog v-model:open="showSaveModal">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Save Theme</DialogTitle>
+          <DialogDescription> Save your current theme settings for later use. </DialogDescription>
+        </DialogHeader>
+        <div class="space-y-4 py-4">
+          <div class="space-y-2">
+            <Label for="themeName">Theme Name</Label>
+            <Input id="themeName" v-model="newTemplateName" placeholder="My Custom Theme" />
           </div>
-        </template>
-      </n-card>
-    </n-modal>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="showSaveModal = false">Cancel</Button>
+          <Button :disabled="!newTemplateName.trim() || savingTemplate" @click="saveTemplate">
+            <span v-if="savingTemplate" class="mr-2 animate-spin">⏳</span>
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete Theme</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{{ templateToDelete?.name }}"?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
+          <Button variant="destructive" @click="deleteTemplate"> Delete </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  NCard,
-  NForm,
-  NFormItem,
-  NInput,
-  NButton,
-  NButtonGroup,
-  NTag,
-  NSwitch,
-  NProgress,
-  NModal,
-  useMessage,
-  useDialog,
-} from 'naive-ui'
-import { Sun, Moon, Check, Layers, Plus, Palette, Trash2 } from 'lucide-vue-next'
+import { Check, Layers, Plus, Palette, Trash2 } from 'lucide-vue-next'
 import { useAuthStore } from '~/stores/auth'
 import { useThemeStore, type ThemeTemplate } from '~/stores/theme'
 
@@ -240,15 +247,16 @@ definePageMeta({
 
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
-const message = useMessage()
-const dialog = useDialog()
 
 const saving = ref(false)
 const savingProfile = ref(false)
 const savingTemplate = ref(false)
 const showSaveModal = ref(false)
+const showDeleteDialog = ref(false)
+const templateToDelete = ref<ThemeTemplate | null>(null)
 const newTemplateName = ref('')
 const initialSettings = ref({ ...themeStore.settings })
+const successMessage = ref('')
 
 const profile = reactive({
   name: authStore.user?.name || '',
@@ -286,9 +294,11 @@ const previewGradient = computed(() => {
 })
 
 const hasChanges = computed(() => {
-  return themeStore.settings.primaryColor !== initialSettings.value.primaryColor ||
+  return (
+    themeStore.settings.primaryColor !== initialSettings.value.primaryColor ||
     themeStore.settings.secondaryColor !== initialSettings.value.secondaryColor ||
     themeStore.settings.darkMode !== initialSettings.value.darkMode
+  )
 })
 
 function handleDarkModeChange(value: boolean) {
@@ -311,10 +321,8 @@ async function saveSettings() {
     darkMode: themeStore.settings.darkMode,
   })
   if (success) {
-    message.success('Settings saved successfully')
+    successMessage.value = 'Settings saved successfully'
     initialSettings.value = { ...themeStore.settings }
-  } else {
-    message.error('Failed to save settings')
   }
   saving.value = false
 }
@@ -327,54 +335,47 @@ async function saveTemplate() {
   savingTemplate.value = false
 
   if (template) {
-    message.success('Theme saved successfully')
     showSaveModal.value = false
     newTemplateName.value = ''
-  } else {
-    message.error('Failed to save theme')
   }
 }
 
 function applyTemplate(template: ThemeTemplate) {
   themeStore.applyTemplate(template)
-  message.success(`Applied theme: ${template.name}`)
 }
 
 function confirmDeleteTemplate(template: ThemeTemplate) {
-  dialog.warning({
-    title: 'Delete Theme',
-    content: `Are you sure you want to delete "${template.name}"?`,
-    positiveText: 'Delete',
-    negativeText: 'Cancel',
-    onPositiveClick: async () => {
-      const success = await themeStore.deleteTemplate(template.id)
-      if (success) {
-        message.success('Theme deleted')
-      } else {
-        message.error('Failed to delete theme')
-      }
-    },
-  })
+  templateToDelete.value = template
+  showDeleteDialog.value = true
+}
+
+async function deleteTemplate() {
+  if (!templateToDelete.value) return
+  await themeStore.deleteTemplate(templateToDelete.value.id)
+  showDeleteDialog.value = false
+  templateToDelete.value = null
 }
 
 async function updateProfile() {
   savingProfile.value = true
   try {
     await new Promise((resolve) => setTimeout(resolve, 500))
-    message.success('Profile updated successfully')
-  } catch {
-    message.error('Failed to update profile')
+    // Profile update logic here
   } finally {
     savingProfile.value = false
   }
 }
 
-watch(() => authStore.user, (user) => {
-  if (user) {
-    profile.name = user.name || ''
-    profile.email = user.email || ''
-  }
-}, { immediate: true })
+watch(
+  () => authStore.user,
+  (user) => {
+    if (user) {
+      profile.name = user.name || ''
+      profile.email = user.email || ''
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(async () => {
   await themeStore.fetchSettings()
@@ -384,10 +385,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.settings-page {
-  max-width: 1200px;
-}
-
 .color-swatch {
   width: 32px;
   height: 32px;
@@ -425,29 +422,5 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.template-item {
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--n-color-embedded);
-  transition: background 0.2s;
-}
-
-.template-item:hover {
-  background: var(--n-color-embedded-modal);
-}
-
-.color-preview {
-  display: flex;
-  gap: 4px;
-}
-
-.color-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 </style>

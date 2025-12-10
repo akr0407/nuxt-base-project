@@ -2,108 +2,196 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
-        <p class="text-gray-600">Manage users and their roles</p>
+        <h1 class="text-2xl font-bold">User Management</h1>
+        <p class="text-muted-foreground">Manage users and their roles</p>
       </div>
-      <n-button
-        v-if="authStore.hasPermission('users:create')"
-        type="primary"
-        @click="openCreateModal"
-      >
-        <template #icon>
-          <component :is="icons.UserPlus" class="w-5 h-5" />
-        </template>
+      <Button v-if="authStore.hasPermission('users:create')" @click="openCreateModal">
+        <UserPlus class="w-5 h-5 mr-2" />
         Add User
-      </n-button>
+      </Button>
     </div>
 
     <!-- Filters -->
-    <n-card class="mb-6">
-      <div class="flex gap-4">
-        <n-input
-          v-model:value="search"
-          placeholder="Search users..."
-          clearable
-          class="max-w-xs"
-          @update:value="debouncedFetch"
-        >
-          <template #prefix>
-            <component :is="icons.Search" class="w-4 h-4 text-gray-400" />
-          </template>
-        </n-input>
-      </div>
-    </n-card>
+    <Card class="mb-6">
+      <CardContent class="pt-6">
+        <div class="flex gap-4">
+          <div class="relative max-w-xs">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              v-model="search"
+              placeholder="Search users..."
+              class="pl-9"
+              @input="debouncedFetch"
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- Users Table -->
-    <n-card>
-      <n-data-table
-        :columns="columns"
-        :data="users"
-        :loading="loading"
-        :pagination="pagination"
-        :row-key="(row) => row.id"
-        remote
-        @update:page="handlePageChange"
-      />
-    </n-card>
+    <Card>
+      <CardContent class="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Email</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Roles</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead class="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-if="loading">
+              <TableCell :colspan="5" class="text-center py-8 text-muted-foreground">
+                Loading...
+              </TableCell>
+            </TableRow>
+            <TableRow v-else-if="users.length === 0">
+              <TableCell :colspan="5" class="text-center py-8 text-muted-foreground">
+                No users found
+              </TableCell>
+            </TableRow>
+            <TableRow v-for="user in users" :key="user.id">
+              <TableCell>{{ user.email }}</TableCell>
+              <TableCell>{{ user.name || '—' }}</TableCell>
+              <TableCell>
+                <div v-if="user.roles?.length" class="flex flex-wrap gap-1">
+                  <Badge v-for="role in user.roles" :key="role.id" variant="secondary">
+                    {{ role.name }}
+                  </Badge>
+                </div>
+                <span v-else class="text-muted-foreground">—</span>
+              </TableCell>
+              <TableCell>
+                <Badge :variant="user.isActive ? 'default' : 'destructive'">
+                  {{ user.isActive ? 'Active' : 'Inactive' }}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div class="flex gap-1">
+                  <Button
+                    v-if="authStore.hasPermission('users:update')"
+                    variant="ghost"
+                    size="icon"
+                    @click="openEditModal(user)"
+                  >
+                    <Pencil class="w-4 h-4" />
+                  </Button>
+                  <Button
+                    v-if="authStore.hasPermission('users:delete')"
+                    variant="ghost"
+                    size="icon"
+                    class="text-destructive"
+                    @click="confirmDelete(user)"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+
+    <!-- Pagination -->
+    <div v-if="total > pageSize" class="flex justify-center gap-2 mt-4">
+      <Button variant="outline" size="sm" :disabled="page <= 1" @click="handlePageChange(page - 1)">
+        Previous
+      </Button>
+      <span class="flex items-center px-4 text-sm text-muted-foreground">
+        Page {{ page }} of {{ Math.ceil(total / pageSize) }}
+      </span>
+      <Button
+        variant="outline"
+        size="sm"
+        :disabled="page >= Math.ceil(total / pageSize)"
+        @click="handlePageChange(page + 1)"
+      >
+        Next
+      </Button>
+    </div>
 
     <!-- Create/Edit Modal -->
-    <n-modal v-model:show="showModal" preset="card" :title="editingUser ? 'Edit User' : 'Create User'" style="width: 500px;">
-      <n-form ref="formRef" :model="form" :rules="rules">
-        <n-form-item label="Email" path="email">
-          <n-input v-model:value="form.email" placeholder="user@example.com" />
-        </n-form-item>
-        <n-form-item v-if="!editingUser" label="Password" path="password">
-          <n-input v-model:value="form.password" type="password" placeholder="Password" />
-        </n-form-item>
-        <n-form-item label="Name" path="name">
-          <n-input v-model:value="form.name" placeholder="Full name" />
-        </n-form-item>
-        <n-form-item label="Roles" path="roleIds">
-          <n-select
-            v-model:value="form.roleIds"
-            multiple
-            :options="roleOptions"
-            placeholder="Select roles"
-          />
-        </n-form-item>
-        <n-form-item v-if="editingUser" label="Active" path="isActive">
-          <n-switch v-model:value="form.isActive" />
-        </n-form-item>
-      </n-form>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <n-button @click="showModal = false">Cancel</n-button>
-          <n-button type="primary" :loading="saving" @click="handleSave">
+    <Dialog v-model:open="showModal">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ editingUser ? 'Edit User' : 'Create User' }}</DialogTitle>
+        </DialogHeader>
+        <form class="space-y-4" @submit.prevent="handleSave">
+          <div class="space-y-2">
+            <Label for="email">Email</Label>
+            <Input
+              id="email"
+              v-model="form.email"
+              type="email"
+              placeholder="user@example.com"
+              required
+            />
+          </div>
+          <div v-if="!editingUser" class="space-y-2">
+            <Label for="password">Password</Label>
+            <Input
+              id="password"
+              v-model="form.password"
+              type="password"
+              placeholder="Password"
+              required
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="name">Name</Label>
+            <Input id="name" v-model="form.name" placeholder="Full name" />
+          </div>
+          <div class="space-y-2">
+            <Label>Roles</Label>
+            <div class="flex flex-wrap gap-2">
+              <div v-for="role in roles" :key="role.id" class="flex items-center space-x-2">
+                <Checkbox
+                  :id="`role-${role.id}`"
+                  :checked="form.roleIds.includes(role.id)"
+                  @update:checked="toggleRole(role.id, $event)"
+                />
+                <Label :for="`role-${role.id}`" class="text-sm font-normal">{{ role.name }}</Label>
+              </div>
+            </div>
+          </div>
+          <div v-if="editingUser" class="flex items-center space-x-2">
+            <Switch :checked="form.isActive" @update:checked="form.isActive = $event" />
+            <Label>Active</Label>
+          </div>
+        </form>
+        <DialogFooter>
+          <Button variant="outline" @click="showModal = false">Cancel</Button>
+          <Button :disabled="saving" @click="handleSave">
+            <span v-if="saving" class="mr-2 animate-spin">⏳</span>
             {{ editingUser ? 'Update' : 'Create' }}
-          </n-button>
-        </div>
-      </template>
-    </n-modal>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete User</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{{ userToDelete?.email }}"?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
+          <Button variant="destructive" @click="handleDelete">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  NButton,
-  NCard,
-  NInput,
-  NDataTable,
-  NModal,
-  NForm,
-  NFormItem,
-  NSelect,
-  NSwitch,
-  NTag,
-  NSpace,
-  NPopconfirm,
-  useMessage,
-  type DataTableColumns,
-  type FormInst,
-  type FormRules,
-} from 'naive-ui'
 import { UserPlus, Search, Pencil, Trash2 } from 'lucide-vue-next'
-import type { VNode } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useDebounceFn } from '@vueuse/core'
 
@@ -111,8 +199,6 @@ definePageMeta({
   layout: 'default',
   middleware: ['auth'],
 })
-
-const icons = { UserPlus, Search, Pencil, Trash2 }
 
 interface User {
   id: string
@@ -129,7 +215,6 @@ interface Role {
 }
 
 const authStore = useAuthStore()
-const message = useMessage()
 const { $api } = useNuxtApp()
 
 const users = ref<User[]>([])
@@ -141,8 +226,9 @@ const total = ref(0)
 const pageSize = 10
 
 const showModal = ref(false)
+const showDeleteDialog = ref(false)
+const userToDelete = ref<User | null>(null)
 const editingUser = ref<User | null>(null)
-const formRef = ref<FormInst | null>(null)
 const saving = ref(false)
 
 const form = reactive({
@@ -153,106 +239,13 @@ const form = reactive({
   isActive: true,
 })
 
-const rules: FormRules = {
-  email: [
-    { required: true, message: 'Email is required', trigger: 'blur' },
-    { type: 'email', message: 'Please enter a valid email', trigger: 'blur' },
-  ],
-  password: [
-    {
-      required: true,
-      message: 'Password is required',
-      trigger: 'blur',
-      validator: (_rule, value) => {
-        if (!editingUser.value && !value) {
-          return new Error('Password is required')
-        }
-        return true
-      },
-    },
-  ],
+function toggleRole(id: string, checked: boolean) {
+  if (checked) {
+    if (!form.roleIds.includes(id)) form.roleIds.push(id)
+  } else {
+    form.roleIds = form.roleIds.filter((r) => r !== id)
+  }
 }
-
-const pagination = computed(() => ({
-  page: page.value,
-  pageSize: pageSize,
-  pageCount: Math.ceil(total.value / pageSize),
-  itemCount: total.value,
-}))
-
-const roleOptions = computed(() =>
-  roles.value.map((role) => ({
-    label: role.name,
-    value: role.id,
-  }))
-)
-
-const columns = computed<DataTableColumns<User>>(() => [
-  {
-    title: 'Email',
-    key: 'email',
-  },
-  {
-    title: 'Name',
-    key: 'name',
-    render: (row) => row.name || '—',
-  },
-  {
-    title: 'Roles',
-    key: 'roles',
-    render: (row) => {
-      if (!row.roles?.length) return '—'
-      return h(NSpace, { size: 'small' }, () =>
-        row.roles.map((role) => h(NTag, { type: 'info', size: 'small' }, () => role.name))
-      )
-    },
-  },
-  {
-    title: 'Status',
-    key: 'isActive',
-    render: (row) =>
-      h(NTag, { type: row.isActive ? 'success' : 'error', size: 'small' }, () =>
-        row.isActive ? 'Active' : 'Inactive'
-      ),
-  },
-  {
-    title: 'Actions',
-    key: 'actions',
-    width: 120,
-    render: (row) => {
-      const buttons: VNode[] = []
-      if (authStore.hasPermission('users:update')) {
-        buttons.push(
-          h(
-            NButton,
-            {
-              size: 'small',
-              quaternary: true,
-              onClick: () => openEditModal(row),
-            },
-            { icon: () => h(Pencil, { size: 16 }) }
-          )
-        )
-      }
-      if (authStore.hasPermission('users:delete')) {
-        buttons.push(
-          h(
-            NPopconfirm,
-            {
-              onPositiveClick: () => handleDelete(row.id),
-            },
-            {
-              trigger: () =>
-                h(NButton, { size: 'small', quaternary: true, type: 'error' }, { icon: () => h(Trash2, { size: 16 }) }),
-              default: () => 'Are you sure you want to delete this user?',
-            }
-          )
-        )
-      }
-      return h(NSpace, { size: 'small' }, () => buttons)
-    },
-  },
-])
 
 async function fetchUsers() {
   loading.value = true
@@ -265,8 +258,8 @@ async function fetchUsers() {
     })
     users.value = response.data
     total.value = response.pagination.total
-  } catch (error: any) {
-    message.error(error.data?.message || 'Failed to fetch users')
+  } catch {
+    // Handle error
   } finally {
     loading.value = false
   }
@@ -313,13 +306,12 @@ function openEditModal(user: User) {
   showModal.value = true
 }
 
-async function handleSave() {
-  try {
-    await formRef.value?.validate()
-  } catch {
-    return
-  }
+function confirmDelete(user: User) {
+  userToDelete.value = user
+  showDeleteDialog.value = true
+}
 
+async function handleSave() {
   saving.value = true
   try {
     if (editingUser.value) {
@@ -332,7 +324,6 @@ async function handleSave() {
           isActive: form.isActive,
         },
       })
-      message.success('User updated successfully')
     } else {
       await $api('/api/users', {
         method: 'POST',
@@ -343,24 +334,25 @@ async function handleSave() {
           roleIds: form.roleIds,
         },
       })
-      message.success('User created successfully')
     }
     showModal.value = false
     fetchUsers()
-  } catch (error: any) {
-    message.error(error.data?.message || 'Failed to save user')
+  } catch {
+    // Handle error
   } finally {
     saving.value = false
   }
 }
 
-async function handleDelete(id: string) {
+async function handleDelete() {
+  if (!userToDelete.value) return
   try {
-    await $api(`/api/users/${id}`, { method: 'DELETE' })
-    message.success('User deleted successfully')
+    await $api(`/api/users/${userToDelete.value.id}`, { method: 'DELETE' })
+    showDeleteDialog.value = false
+    userToDelete.value = null
     fetchUsers()
-  } catch (error: any) {
-    message.error(error.data?.message || 'Failed to delete user')
+  } catch {
+    // Handle error
   }
 }
 

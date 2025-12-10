@@ -1,21 +1,21 @@
 <template>
   <div class="docs-page">
-    <n-card class="docs-card">
-      <ClientOnly>
-        <div id="stoplight-root"></div>
-        <template #fallback>
-          <div class="flex items-center justify-center h-96">
-            <div class="animate-pulse text-gray-400">Loading Stoplight Elements...</div>
-          </div>
-        </template>
-      </ClientOnly>
-    </n-card>
+    <Card class="docs-card">
+      <CardContent class="p-0">
+        <ClientOnly>
+          <div id="stoplight-root" />
+          <template #fallback>
+            <div class="flex items-center justify-center h-96">
+              <div class="animate-pulse text-gray-400">Loading Stoplight Elements...</div>
+            </div>
+          </template>
+        </ClientOnly>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NCard } from 'naive-ui'
-
 definePageMeta({
   layout: 'default',
 })

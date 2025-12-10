@@ -1,20 +1,21 @@
 <template>
   <div class="docs-page">
-    <n-card class="docs-card">
-      <ClientOnly>
-        <div id="swagger-ui"></div>
-        <template #fallback>
-          <div class="flex items-center justify-center h-96">
-            <div class="animate-pulse text-gray-400">Loading Swagger UI...</div>
-          </div>
-        </template>
-      </ClientOnly>
-    </n-card>
+    <Card class="docs-card">
+      <CardContent class="p-0">
+        <ClientOnly>
+          <div id="swagger-ui" />
+          <template #fallback>
+            <div class="flex items-center justify-center h-96">
+              <div class="animate-pulse text-gray-400">Loading Swagger UI...</div>
+            </div>
+          </template>
+        </ClientOnly>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NCard } from 'naive-ui'
 import 'swagger-ui-dist/swagger-ui.css'
 
 definePageMeta({
@@ -23,15 +24,12 @@ definePageMeta({
 
 onMounted(async () => {
   const SwaggerUI = (await import('swagger-ui-dist/swagger-ui-bundle')).default
-  
+
   SwaggerUI({
     url: '/api/openapi.json',
     dom_id: '#swagger-ui',
     deepLinking: false,
-    presets: [
-      SwaggerUI.presets.apis,
-      SwaggerUI.SwaggerUIStandalonePreset,
-    ],
+    presets: [SwaggerUI.presets.apis, SwaggerUI.SwaggerUIStandalonePreset],
     layout: 'BaseLayout',
   })
 })
